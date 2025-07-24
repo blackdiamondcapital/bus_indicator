@@ -608,3 +608,248 @@
             },
             {
                 name: "F.性別平等措施",
+                score: "-1.5分",
+                indicators: [
+                    {
+                        name: "性別平等法令規範(F1)",
+                        type: "公司別",
+                        items: [
+                            { definition: "瞭解各公車業者性別平等法令規範遵循情形", score: -0.5 }
+                        ]
+                    },
+                    {
+                        name: "育兒相關措施(F2)",
+                        type: "公司別",
+                        items: [
+                            { definition: "瞭解各公車業者育兒相關措施", score: -0.5 }
+                        ]
+                    },
+                    {
+                        name: "性別安全相關措施(F3)",
+                        type: "公司別",
+                        items: [
+                            { definition: "瞭解各公車業者性別安全相關措施", score: -0.5 }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        // DOM 元素
+        const searchInput = document.querySelector('.search-input');
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const categoriesContainer = document.getElementById('categories-container');
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            renderCategories();
+            setupEventListeners();
+        });
+
+        // 渲染分類
+        function renderCategories() {
+            categoriesContainer.innerHTML = '';
+            
+            evaluationData.forEach((category, categoryIndex) => {
+                const categoryElement = createCategoryElement(category, categoryIndex);
+                categoriesContainer.appendChild(categoryElement);
+            });
+        }
+
+        // 創建分類元素
+        function createCategoryElement(category, categoryIndex) {
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'category';
+            categoryDiv.dataset.categoryIndex = categoryIndex;
+            
+            const indicatorsHtml = category.indicators.map((indicator, indicatorIndex) => {
+                const itemsHtml = indicator.items.map(item => {
+                    if (item.definition.trim()) {
+                        return `
+                            <div class="detail-item">
+                                <div class="detail-definition">${item.definition}</div>
+                                <div class="detail-score">配分: ${item.score}分</div>
+                            </div>
+                        `;
+                    }
+                    return '';
+                }).join('');
+
+                return `
+                    <div class="indicator" data-type="${indicator.type}" data-indicator-index="${indicatorIndex}">
+                        <div class="indicator-header" onclick="toggleIndicator(${categoryIndex}, ${indicatorIndex})">
+                            <div class="indicator-name">${indicator.name}</div>
+                            <div class="indicator-type">${indicator.type}</div>
+                        </div>
+                        <div class="indicator-details">
+                            ${itemsHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            categoryDiv.innerHTML = `
+                <div class="category-header" onclick="toggleCategory(${categoryIndex})">
+                    <div class="category-title">${category.name}</div>
+                    <div class="category-score">${category.score}</div>
+                    <div class="toggle-icon">▼</div>
+                </div>
+                <div class="indicators">
+                    ${indicatorsHtml}
+                </div>
+            `;
+
+            return categoryDiv;
+        }
+
+        // 設置事件監聽器
+        function setupEventListeners() {
+            // 搜尋功能
+            searchInput.addEventListener('input', handleSearch);
+            
+            // 篩選按鈕
+            filterButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    handleFilter(btn.dataset.filter);
+                });
+            });
+        }
+
+        // 切換分類展開/收合
+        function toggleCategory(categoryIndex) {
+            const category = document.querySelector(`[data-category-index="${categoryIndex}"]`);
+            category.classList.toggle('collapsed');
+        }
+
+        // 切換指標詳細資訊
+        function toggleIndicator(categoryIndex, indicatorIndex) {
+            const indicator = document.querySelector(`[data-category-index="${categoryIndex}"] [data-indicator-index="${indicatorIndex}"]`);
+            indicator.classList.toggle('expanded');
+        }
+
+        // 搜尋處理
+        function handleSearch() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const categories = document.querySelectorAll('.category');
+            
+            categories.forEach(category => {
+                const categoryTitle = category.querySelector('.category-title').textContent.toLowerCase();
+                const indicators = category.querySelectorAll('.indicator');
+                let categoryHasMatch = false;
+                
+                if (categoryTitle.includes(searchTerm)) {
+                    categoryHasMatch = true;
+                }
+                
+                indicators.forEach(indicator => {
+                    const indicatorName = indicator.querySelector('.indicator-name').textContent.toLowerCase();
+                    const detailItems = indicator.querySelectorAll('.detail-definition');
+                    let indicatorHasMatch = false;
+                    
+                    if (indicatorName.includes(searchTerm)) {
+                        indicatorHasMatch = true;
+                    }
+                    
+                    detailItems.forEach(detail => {
+                        if (detail.textContent.toLowerCase().includes(searchTerm)) {
+                            indicatorHasMatch = true;
+                        }
+                    });
+                    
+                    if (indicatorHasMatch) {
+                        categoryHasMatch = true;
+                        indicator.classList.remove('hidden');
+                    } else {
+                        indicator.classList.add('hidden');
+                    }
+                });
+                
+                if (categoryHasMatch && searchTerm) {
+                    category.classList.remove('hidden');
+                    category.classList.remove('collapsed');
+                } else if (searchTerm) {
+                    category.classList.add('hidden');
+                } else {
+                    category.classList.remove('hidden');
+                    indicators.forEach(indicator => {
+                        indicator.classList.remove('hidden');
+                    });
+                }
+            });
+        }
+
+        // 篩選處理
+        function handleFilter(filter) {
+            const categories = document.querySelectorAll('.category');
+            
+            categories.forEach(category => {
+                const indicators = category.querySelectorAll('.indicator');
+                let categoryHasMatch = false;
+                
+                if (filter === 'all') {
+                    categoryHasMatch = true;
+                    indicators.forEach(indicator => {
+                        indicator.classList.remove('hidden');
+                    });
+                } else {
+                    indicators.forEach(indicator => {
+                        const indicatorType = indicator.dataset.type;
+                        const categoryTitle = category.querySelector('.category-title').textContent;
+                        
+                        if (indicatorType === filter || categoryTitle.includes(filter)) {
+                            indicator.classList.remove('hidden');
+                            categoryHasMatch = true;
+                        } else {
+                            indicator.classList.add('hidden');
+                        }
+                    });
+                }
+                
+                if (categoryHasMatch) {
+                    category.classList.remove('hidden');
+                } else {
+                    category.classList.add('hidden');
+                }
+            });
+        }
+
+        // 快速鍵支援
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                searchInput.focus();
+            }
+            
+            if (e.key === 'Escape') {
+                searchInput.value = '';
+                handleSearch();
+                searchInput.blur();
+            }
+        });
+
+        // 統計資訊更新
+        function updateStats() {
+            const totalCategories = evaluationData.length;
+            const totalIndicators = evaluationData.reduce((sum, cat) => sum + cat.indicators.length, 0);
+            const totalScore = evaluationData.reduce((sum, cat) => {
+                return sum + cat.indicators.reduce((indicatorSum, indicator) => {
+                    return indicatorSum + indicator.items.reduce((itemSum, item) => itemSum + (item.score || 0), 0);
+                }, 0);
+            }, 0);
+            
+            const statCards = document.querySelectorAll('.stat-card .stat-number');
+            if (statCards.length >= 4) {
+                statCards[0].textContent = totalCategories;
+                statCards[1].textContent = totalIndicators;
+                statCards[2].textContent = Math.round(totalScore);
+                statCards[3].textContent = '4.5';
+            }
+        }
+
+        // 頁面載入完成後更新統計
+        window.addEventListener('load', updateStats);
+    </script>
+</body>
+</html>
